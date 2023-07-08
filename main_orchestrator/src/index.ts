@@ -12,6 +12,9 @@ const config = {
     createUser: 'users.create',
     messageNotify: 'messages.Notify',
   },
+  tunning: {
+    batchSize: 100,
+  },
 };
 
 function celeryConnect() {
@@ -36,15 +39,32 @@ async function celeryTrigger(conn: Client, taskName: string, arg: unknown[]) {
   return applyed.get();
 }
 
+async function sendGreetingsMessages(conn: Client, newUsers: string[][]) {
+  let batches = [];
+
+  for (const user of newUsers) {
+    const [, , email] = user;
+    batches.push(celeryTrigger(conn, config.tasks.messageNotify, [email, faker.lorem.sentence(10)]));
+    if (batches.length >= config.tunning.batchSize) {
+      const batchResult = await Promise.all(batches);
+      console.log(batchResult);
+      batches = [];
+    }
+  }
+}
+
 async function create500Users(conn: Client) {
   let batches = [];
+  const newUsers = [];
   for (let i = 0; i < 500; i++) {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
     const email = faker.internet.email();
 
-    batches.push(celeryTrigger(conn, config.tasks.createUser, [firstName, lastName, email]));
-    if (batches.length >= 100) {
+    const newUser = [firstName, lastName, email];
+    batches.push(celeryTrigger(conn, config.tasks.createUser, newUser));
+    newUsers.push(newUser);
+    if (batches.length >= config.tunning.batchSize) {
       // todo: fix error:
       //(node:39679) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 ready listeners added to [Redis]. Use emitter.setMaxListeners() to increase limit
       // (Use `node --trace-warnings ...` to show where the warning was created)
@@ -53,6 +73,7 @@ async function create500Users(conn: Client) {
       batches = [];
     }
   }
+  sendGreetingsMessages(conn, newUsers);
 }
 (async function main() {
   const celeryConn = celeryConnect();
