@@ -33,13 +33,21 @@ async function celeryTrigger(conn: Client, taskName: string, arg: unknown[]) {
 }
 
 async function create500Users(conn: Client) {
+  let batches = [];
   for (let i = 0; i < 500; i++) {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
     const email = faker.internet.email();
 
-    const res = await celeryTrigger(conn, config.tasks.createUser, [firstName, lastName, email]);
-    console.log(res);
+    batches.push(celeryTrigger(conn, config.tasks.createUser, [firstName, lastName, email]));
+    if (batches.length >= 100) {
+      // todo: fix error:
+      //(node:39679) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 ready listeners added to [Redis]. Use emitter.setMaxListeners() to increase limit
+      // (Use `node --trace-warnings ...` to show where the warning was created)
+      const batchResult = await Promise.all(batches);
+      console.log(batchResult);
+      batches = [];
+    }
   }
 }
 (async function main() {

@@ -25,19 +25,19 @@ func getOneById(db *gorm.DB, id string) User {
 	return user
 }
 
-type userApp struct {
+type UserApp struct {
 	Db *gorm.DB
 }
 
-func (this *userApp) Create(firstName string, lastName string, email string) User {
+func (this *UserApp) Create(firstName string, lastName string, email string) User {
 	return createUser(this.Db, firstName, lastName, email)
 }
 
-func (this *userApp) GetByID(id string) User {
+func (this *UserApp) GetByID(id string) User {
 	return getOneById(this.Db, id)
 }
 
-func UserAppBuilder(db *gorm.DB) userApp {
+func UserAppBuilder(db *gorm.DB) UserApp {
 	db.AutoMigrate(&User{})
-	return userApp{Db: db}
+	return UserApp{Db: db}
 }
