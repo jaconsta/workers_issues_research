@@ -1,0 +1,29 @@
+version: "3.8"
+services: 
+  postgres: 
+    image: postgres:14.2-alpine
+      # volumes: 
+      #  - ./dbInit/docker-postgresql-multiple-databases:/docker-entrypoint-initdb.d
+    environment:
+      - POSTGRES_USER=johndoe
+      - POSTGRES_PASSWORD=randompassword
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=users
+      # - POSTGRES_MULTIPLE_DATABASES=users,messages
+    ports:
+      - 5432:5432
+    networks:
+      - tickets-demo-network
+  redis:
+    image: redis:6.0.8-alpine
+    ports:
+      - 6379:6379
+    networks:
+      - tickets-demo-network
+
+networks:
+  tickets-demo-network:
+    name: tickets-demo-network
+    driver: bridge
+
