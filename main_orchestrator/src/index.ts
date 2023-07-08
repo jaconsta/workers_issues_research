@@ -22,6 +22,10 @@ function celeryConnect() {
   };
   console.log(urls);
   const client = createClient(urls.backend, urls.broker);
+
+  // Go's celery is not yet compatible with Task protocol V2
+  client.conf.TASK_PROTOCOL = 1;
+
   return client;
 }
 

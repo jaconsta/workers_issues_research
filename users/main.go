@@ -115,8 +115,12 @@ func workersConfig(usersMod users.UserApp) *gocelery.CeleryClient {
 		5, // number of workers
 	)
 
+	addUserTask := func(first string, last string, email string) string {
+		fmt.Printf("%s, %s, %s \n", first, last, email)
+		return "got_cha"
+	}
 	// register task
-	cli.Register(configStruct.Tasks.CreateUser, &userAddTask{})
+	cli.Register(configStruct.Tasks.CreateUser, addUserTask)
 	return cli
 }
 
