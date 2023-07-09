@@ -4,7 +4,7 @@ import Worker from 'celery-node/dist/app/worker';
 let globalCounter = 0;
 const config = Object.freeze({
   redis: {
-    dbNumber: 3, // 1,
+    dbNumber: 3,
     ipFamily: 4,
     url: process.env.REDIS_URL ?? 'redis://redis:6379',
   },
@@ -31,16 +31,9 @@ function registerProcessMessage(conn: Worker, taskName: string) {
     console.log(`(${globalCounter++}) Sending a message to ${userId}, message: ${message}`)
   );
 }
-function voidHandlers(conn: Worker) {
-  conn.register(config.tasks.createUser, () => {
-    console.log(`\n (${globalCounter++})`, 'Void handler for,', config.tasks.createUser);
-    return 'error_not_me';
-  });
-}
 
 (async function main() {
   const celeryConn = celeryConnect();
   registerProcessMessage(celeryConn, config.tasks.messageNotify);
-  voidHandlers(celeryConn);
   celeryConn.start();
 })();

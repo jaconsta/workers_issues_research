@@ -21,67 +21,30 @@ type RedisConfig struct {
 	IpFamily int
 	Url      string
 }
+type DatabaseConfig struct {
+	Host     string
+	Username string
+	Password string
+	Dbname   string
+	Port     string
+}
 
 type ConfigStruct struct {
-	Tasks TaskConfig
-	Redis RedisConfig
+	Tasks    TaskConfig
+	Redis    RedisConfig
+	Database DatabaseConfig
 }
 
 var configStruct ConfigStruct
 
 func databaseConnection() *gorm.DB {
-	dsn := "host=localhost user=johndoe password=randompassword dbname=users port=5432 sslmode=disable"
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", configStruct.Database.Host, configStruct.Database.Username, configStruct.Database.Password, configStruct.Database.Dbname, configStruct.Database.Port)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic(err.Error())
 	}
 	return db
 }
-
-// // exampleAddTask is integer addition task
-// // with named arguments
-// type userAddTask struct {
-// 	// userApp   users.UserApp
-// 	firstName string
-// 	lastName  string
-// 	email     string
-// }
-//
-// // ParseArgs is not defined in CeleryTask interface, only kwargs
-// func (a *userAddTask) ParseArgs(args []string) error {
-// 	a.firstName = args[0]
-// 	a.lastName = args[1]
-// 	a.email = args[2]
-// 	return nil
-// }
-
-// func (a *userAddTask) ParseKwargs(kwargs map[string]interface{}) error {
-// 	kwargA, ok := kwargs[""]
-// 	if !ok {
-// 		return fmt.Errorf("undefined kwarg a")
-// 	}
-// 	kwargAFloat, ok := kwargA.(float64)
-// 	if !ok {
-// 		return fmt.Errorf("malformed kwarg a")
-// 	}
-// 	a.firstName = int(kwargAFloat)
-// 	kwargB, ok := kwargs["b"]
-// 	if !ok {
-// 		return fmt.Errorf("undefined kwarg b")
-// 	}
-// 	kwargBFloat, ok := kwargB.(float64)
-// 	if !ok {
-// 		return fmt.Errorf("malformed kwarg b")
-// 	}
-// 	a.b = int(kwargBFloat)
-// 	return nil
-// }
-
-// func (a *userAddTask) RunTask() (interface{}, error) {
-// 	fmt.Println("got task")
-// 	result := a.firstName + " " + a.lastName + " " + a.email
-// 	return result, nil
-// }
 
 func addUserTask(usersMod *users.UserApp) func(string, string, string) string {
 	return func(first string, last string, email string) string {
@@ -112,7 +75,6 @@ func redisPoolConnect(url string) *redis.Pool {
 }
 
 func workersConfig(usersMod users.UserApp) *gocelery.CeleryClient {
-	// create redis connection pool
 	brokerDb := configStruct.Redis.DbNumber * 2
 	redisPoolBroker := redisPoolConnect(fmt.Sprintf("%s/%d", configStruct.Redis.Url, brokerDb))
 	redisPoolBackend := redisPoolConnect(fmt.Sprintf("%s/%d", configStruct.Redis.Url, brokerDb*2))
@@ -123,11 +85,6 @@ func workersConfig(usersMod users.UserApp) *gocelery.CeleryClient {
 		5, // number of workers
 	)
 
-	// addUserTask := func(first string, last string, email string) string {
-	// 	fmt.Printf("%s, %s, %s \n", first, last, email)
-	// 	return "got_cha"
-	// }
-	// register task
 	cli.Register(configStruct.Tasks.CreateUser, addUserTask(&usersMod))
 	return cli
 }
@@ -142,6 +99,13 @@ func main() {
 			DbNumber: 1,
 			IpFamily: 4,
 			Url:      "redis://localhost:6379",
+		},
+		Database: DatabaseConfig{
+			Host:     "localhost ",
+			Username: "johndoe ",
+			Password: "randompassword ",
+			Dbname:   "users ",
+			Port:     "5432 ",
 		},
 	}
 

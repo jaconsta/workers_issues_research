@@ -4,9 +4,12 @@ import { faker } from '@faker-js/faker';
 
 const config = {
   redis: {
-    dbNumber: 1,
     ipFamily: 4,
     url: process.env.REDIS_URL ?? 'redis://redis:6379',
+  },
+  workers: {
+    usersDbNumber: 1,
+    messagesDbNumber: 3,
   },
   tasks: {
     createUser: 'users.create',
@@ -55,7 +58,7 @@ async function sendGreetingsMessages(conn: Client, newUsers: string[][]) {
   }
 }
 
-async function create500Users(conn: Client) {
+async function createUsers(conn: Client) {
   let batches = [];
   const newUsers = [];
   for (let i = 0; i < config.tunning.createUsers; i++) {
@@ -70,6 +73,8 @@ async function create500Users(conn: Client) {
       // todo: fix error:
       //(node:39679) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 ready listeners added to [Redis]. Use emitter.setMaxListeners() to increase limit
       // (Use `node --trace-warnings ...` to show where the warning was created)
+      // --
+      // Currently fixed with the `batches` approach
       const batchResult = await Promise.all(batches);
       console.log(batchResult);
       batches = [];
@@ -78,11 +83,11 @@ async function create500Users(conn: Client) {
   return newUsers;
 }
 (async function main() {
-  const celeryConn = celeryConnect(config.redis.dbNumber);
-  const newUsers = await create500Users(celeryConn);
+  const celeryConn = celeryConnect(config.workers.usersDbNumber);
+  const newUsers = await createUsers(celeryConn);
   celeryConn.disconnect();
   if (config.tunning.sendGreeting) {
-    const celery2 = celeryConnect(config.redis.dbNumber + 2);
+    const celery2 = celeryConnect(config.workers.messagesDbNumber);
     await sendGreetingsMessages(celery2, newUsers);
     celery2.disconnect();
   }
