@@ -15,12 +15,12 @@ const config = {
   tunning: {
     createUsers: 20, // default: 500,
     batchSize: 5,
-    sendGreeting: false,
+    sendGreeting: true,
   },
 };
 
-function celeryConnect() {
-  const backendDb = config.redis.dbNumber * 2;
+function celeryConnect(dbMultiplier: number) {
+  const backendDb = dbMultiplier * 2;
   const urls = {
     backend: `${config.redis.url}/${backendDb}`,
     broker: `${config.redis.url}/${backendDb * 2}`,
@@ -75,11 +75,16 @@ async function create500Users(conn: Client) {
       batches = [];
     }
   }
-  if (config.tunning.sendGreeting) {
-    sendGreetingsMessages(conn, newUsers);
-  }
+  return newUsers;
 }
 (async function main() {
-  const celeryConn = celeryConnect();
-  await create500Users(celeryConn).then(() => console.log('done'));
+  const celeryConn = celeryConnect(config.redis.dbNumber);
+  const newUsers = await create500Users(celeryConn);
+  celeryConn.disconnect();
+  if (config.tunning.sendGreeting) {
+    const celery2 = celeryConnect(config.redis.dbNumber + 2);
+    await sendGreetingsMessages(celery2, newUsers);
+    celery2.disconnect();
+  }
+  console.log('done');
 })();

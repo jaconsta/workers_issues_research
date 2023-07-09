@@ -4,7 +4,7 @@ import Worker from 'celery-node/dist/app/worker';
 let globalCounter = 0;
 const config = Object.freeze({
   redis: {
-    dbNumber: 1,
+    dbNumber: 3, // 1,
     ipFamily: 4,
     url: process.env.REDIS_URL ?? 'redis://redis:6379',
   },
