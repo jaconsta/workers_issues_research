@@ -38,22 +38,22 @@ func databaseConnection() *gorm.DB {
 	return db
 }
 
-// exampleAddTask is integer addition task
-// with named arguments
-type userAddTask struct {
-	// userApp   users.UserApp
-	firstName string
-	lastName  string
-	email     string
-}
-
-// ParseArgs is not defined in CeleryTask interface, only kwargs
-func (a *userAddTask) ParseArgs(args []string) error {
-	a.firstName = args[0]
-	a.lastName = args[1]
-	a.email = args[2]
-	return nil
-}
+// // exampleAddTask is integer addition task
+// // with named arguments
+// type userAddTask struct {
+// 	// userApp   users.UserApp
+// 	firstName string
+// 	lastName  string
+// 	email     string
+// }
+//
+// // ParseArgs is not defined in CeleryTask interface, only kwargs
+// func (a *userAddTask) ParseArgs(args []string) error {
+// 	a.firstName = args[0]
+// 	a.lastName = args[1]
+// 	a.email = args[2]
+// 	return nil
+// }
 
 // func (a *userAddTask) ParseKwargs(kwargs map[string]interface{}) error {
 // 	kwargA, ok := kwargs[""]
@@ -77,10 +77,18 @@ func (a *userAddTask) ParseArgs(args []string) error {
 // 	return nil
 // }
 
-func (a *userAddTask) RunTask() (interface{}, error) {
-	fmt.Println("got task")
-	result := a.firstName + " " + a.lastName + " " + a.email
-	return result, nil
+// func (a *userAddTask) RunTask() (interface{}, error) {
+// 	fmt.Println("got task")
+// 	result := a.firstName + " " + a.lastName + " " + a.email
+// 	return result, nil
+// }
+
+func addUserTask(usersMod *users.UserApp) func(string, string, string) string {
+	return func(first string, last string, email string) string {
+		usersMod.Create(first, last, email)
+		fmt.Printf("%s, %s, %s \n", first, last, email)
+		return "got_cha"
+	}
 }
 
 func redisPoolConnect(url string) *redis.Pool {
@@ -115,12 +123,12 @@ func workersConfig(usersMod users.UserApp) *gocelery.CeleryClient {
 		5, // number of workers
 	)
 
-	addUserTask := func(first string, last string, email string) string {
-		fmt.Printf("%s, %s, %s \n", first, last, email)
-		return "got_cha"
-	}
+	// addUserTask := func(first string, last string, email string) string {
+	// 	fmt.Printf("%s, %s, %s \n", first, last, email)
+	// 	return "got_cha"
+	// }
 	// register task
-	cli.Register(configStruct.Tasks.CreateUser, addUserTask)
+	cli.Register(configStruct.Tasks.CreateUser, addUserTask(&usersMod))
 	return cli
 }
 

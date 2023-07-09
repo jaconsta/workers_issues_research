@@ -39,5 +39,7 @@ func (this *UserApp) GetByID(id string) User {
 
 func UserAppBuilder(db *gorm.DB) UserApp {
 	db.AutoMigrate(&User{})
+	// Clear all for test purposes
+	db.Exec("DELETE FROM users")
 	return UserApp{Db: db}
 }

@@ -13,7 +13,9 @@ const config = {
     messageNotify: 'messages.Notify',
   },
   tunning: {
-    batchSize: 100,
+    createUsers: 20, // default: 500,
+    batchSize: 5,
+    sendGreeting: false,
   },
 };
 
@@ -45,7 +47,7 @@ async function sendGreetingsMessages(conn: Client, newUsers: string[][]) {
   for (const user of newUsers) {
     const [, , email] = user;
     batches.push(celeryTrigger(conn, config.tasks.messageNotify, [email, faker.lorem.sentence(10)]));
-    if (batches.length >= config.tunning.batchSize) {
+    if (batches.length >= config.tunning.batchSize / 30) {
       const batchResult = await Promise.all(batches);
       console.log(batchResult);
       batches = [];
@@ -56,7 +58,7 @@ async function sendGreetingsMessages(conn: Client, newUsers: string[][]) {
 async function create500Users(conn: Client) {
   let batches = [];
   const newUsers = [];
-  for (let i = 0; i < 500; i++) {
+  for (let i = 0; i < config.tunning.createUsers; i++) {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
     const email = faker.internet.email();
@@ -73,7 +75,9 @@ async function create500Users(conn: Client) {
       batches = [];
     }
   }
-  sendGreetingsMessages(conn, newUsers);
+  if (config.tunning.sendGreeting) {
+    sendGreetingsMessages(conn, newUsers);
+  }
 }
 (async function main() {
   const celeryConn = celeryConnect();
